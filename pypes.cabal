@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Compiler.Token.Identifier
       Compiler.Token.PyNumber
       Lib
   other-modules:
@@ -58,6 +59,7 @@ test-suite pypes-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Compiler.Token.IdentifierSpec
       Compiler.Token.PyNumberSpec
       Paths_pypes
   autogen-modules:

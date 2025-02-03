@@ -57,7 +57,7 @@ parseFailureCases =
 
 test :: (a -> PyNumber) -> (String, a) -> SpecWith ()
 test ctor (actual, expected) = do
-  it ("parses " ++ actual) $ do
+  it ("accepts " ++ actual) $ do
     case parse pyNumber "" actual of
       Left e -> fail $ "Expected parse to have succeeded but got " ++ show e
       Right x -> x `shouldBe` (ctor expected)
@@ -68,7 +68,7 @@ spec = do
     forM_ integerTestCases (test PyInt)
     forM_ floatTestCases (test PyFloat)
     forM_ parseFailureCases $ \testCase -> do
-      it ("does not accept " ++ testCase) $ do
+      it ("rejects " ++ testCase) $ do
         case parse pyNumber "" testCase of
           Left e -> (show e) `shouldSatisfy` (\x -> length x > 0)
           Right x -> fail $ "Unexpected successful parse " ++ show x
