@@ -1,11 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Compiler.Token.IdentifierSpec (spec) where
 
 import Compiler.Token.Identifier
 import Test.Hspec
-import Text.Parsec
+import Text.Megaparsec
 import Control.Monad (forM_)
+import Data.Text (Text, unpack)
 
-acceptCases :: [String]
+acceptCases :: [Text]
 acceptCases =
   [ "abc"
   , "-abc"
@@ -17,7 +20,7 @@ acceptCases =
   , "aA"
   ]
 
-rejectCases :: [String]
+rejectCases :: [Text]
 rejectCases =
   [
     "0a"
@@ -27,11 +30,11 @@ rejectCases =
 
 spec :: Spec
 spec = describe "Identifier" $ do
-  forM_ acceptCases $ \testCase -> it ("accepts " ++ testCase ++ " as identifier") $ do
+  forM_ acceptCases $ \testCase -> (it . unpack) ("accepts " <> testCase <> " as identifier") $ do
     case parse identifier "" testCase of
       Left e -> fail $ "Expected parse to have succeeded but got " ++ show e
       Right x -> x `shouldBe` (Identifier testCase)
-  forM_ rejectCases $ \testCase -> it ("rejects " ++ testCase ++ " as identifier") $ do
+  forM_ rejectCases $ \testCase -> (it . unpack) ("rejects " <> testCase <> " as identifier") $ do
     case parse identifier "" testCase of
       Left e -> (show e) `shouldSatisfy` (\x -> length x > 0)
       Right x -> fail $ "Unexpected successful parse " ++ show x

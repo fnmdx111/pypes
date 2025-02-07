@@ -1,81 +1,117 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Compiler.Token.PyNumber (pyNumber, PyNumber(..)) where
 
-import Text.Parsec
-import Text.Parsec.String (Parser)
-import Data.Char (digitToInt)
+import Compiler.Token.Util (Parser, lexeme)
+import Data.Text (Text, pack)
+import Text.Megaparsec
+import Text.Megaparsec.Char
 
-data PyNumber = PyInt Integer | PyFloat Double deriving (Show, Eq)
 
-baseTenInteger :: Parser String
-baseTenInteger = do
-  s <- many1 digit
-  case s of
-    "0" -> return "0"
-    x:_ | x /= '0' -> return s
-    _ -> unexpected "Unexpected leading zero"
+data PyNumber = PyInt Text | PyFloat Text deriving (Show, Eq)
 
-digitInteger :: String -> [Char] -> Integer -> Parser Integer
-digitInteger prefix allowedDigits base = do
-  _ <- string prefix
-  digits <- many1 (oneOf allowedDigits)
-  return $ baseToInt digits
-  where baseToInt = foldl (\acc x -> acc * base + toInteger (digitToInt x)) 0
+nonZeroDigit :: Parser Char
+nonZeroDigit = oneOf ['1'..'9'] <?> "non-zero digit"
 
-decimalInteger :: Parser Integer
-decimalInteger = do
-  s <- baseTenInteger
-  return $ read s
+optionalUnderscore :: Parser [Char]
+optionalUnderscore = optional (char '_') >>= \x -> case x of
+  Just underscore -> pure [underscore]
+  Nothing -> pure []
 
-binaryInteger :: Parser Integer
-binaryInteger = digitInteger "0b" "01" 2
+pyDigit :: Parser Char -> Parser String
+pyDigit digitParser = do
+  lead <- optionalUnderscore
+  rest <- digitParser
+  return $ lead ++ [rest]
 
-octalInteger :: Parser Integer
-octalInteger = digitInteger "0o" "01234567" 8
+decInteger1 :: Parser PyNumber
+decInteger1 = do
+  lead <- nonZeroDigit
+  rest <- many $ pyDigit digitChar
+  return . PyInt . pack $ lead:(mconcat rest)
 
-hexInteger :: Parser Integer
-hexInteger = digitInteger "0x" "0123456789abcdef" 16
+decInteger2 :: Parser PyNumber
+decInteger2 = do
+  lead <- some (char '0')
+  rest <- many $ pyDigit (char '0')
+  return . PyInt . pack $ lead ++ mconcat rest
 
-sign :: Num a => Parser (a -> a)
-sign = (try (char '-' >> return negate)) <|> (optional (char '+') >> return id)
+decInteger :: Parser PyNumber
+decInteger = try decInteger1 <|> decInteger2
+
+modParser :: Parser Char -> Parser [Char]
+modParser modChar = do
+  lead <- char '0'
+  next <- modChar
+  return $ lead:[next]
+
+binInteger :: Parser PyNumber
+binInteger = do
+  lead <- modParser $ oneOf ['b', 'B']
+  rest <- some $ pyDigit binDigitChar
+  return . PyInt . pack $ lead ++ mconcat rest
+
+octInteger :: Parser PyNumber
+octInteger = do
+  lead <- modParser $ oneOf ['o', 'O']
+  rest <- some $ pyDigit octDigitChar
+  return . PyInt . pack $ lead ++ mconcat rest
+
+hexInteger :: Parser PyNumber
+hexInteger = do
+  lead <- modParser $ oneOf ['x', 'X']
+  rest <- some $ pyDigit hexDigitChar
+  return . PyInt . pack $ lead ++ mconcat rest
 
 integer :: Parser PyNumber
-integer = do
-  signFunc <- sign
-  num <- try hexInteger <|> try octalInteger <|> try binaryInteger <|> decimalInteger
-  return $ PyInt (signFunc num)
+integer = try hexInteger <|> try octInteger <|> try binInteger <|> decInteger
 
-eNotation :: Parser Integer
-eNotation = do
-  _ <- oneOf "eE"
-  PyInt exponentInt <- integer
-  return exponentInt
 
-float0 :: Parser String
-float0 = do
-  whole <- baseTenInteger
-  _ <- char '.'
-  return $ whole ++ ".0"
+digitPart :: Parser String
+digitPart = do
+  lead <- digitChar
+  rest <- many $ pyDigit digitChar
+  return $ lead:mconcat rest
 
-float1 :: Parser String
-float1 = do
-  _ <- char '.'
-  fractional <- many1 digit
-  return $ "0." ++ fractional
+fractionPart :: Parser String
+fractionPart = do
+  dot <- char '.'
+  rest <- digitPart
+  return $ dot:rest
 
-float2 :: Parser String
-float2 = do
-  whole <- baseTenInteger
-  _ <- char '.'
-  fractional <- many1 digit
-  return (whole ++ "." ++ fractional)
+exponentPart :: Parser [Char]
+exponentPart = do
+  e <- oneOf ['e', 'E']
+  sign <- optional (oneOf ['+', '-']) >>= \ch -> case ch of
+    Just c -> pure [c]
+    Nothing -> pure []
+  rest <- digitPart
+  return $ e:sign ++ rest
+
+pointFloat1 :: Parser String
+pointFloat1 = do
+  p1 <- option "" digitPart
+  p2 <- fractionPart
+  return $ p1 ++ p2
+
+pointFloat2 :: Parser String
+pointFloat2 = do
+  p1 <- digitPart
+  p2 <- char '.'
+  return $ p1 ++ [p2]
+
+pointFloat :: Parser String
+pointFloat = try pointFloat1 <|> pointFloat2
+
+exponentFloat :: Parser String
+exponentFloat = do
+  p1 <- choice [pointFloat, digitPart]
+  p2 <- exponentPart
+  return $ p1 ++ p2
 
 float :: Parser PyNumber
-float = do
-  signFunc <- sign
-  n <- try float2 <|> try float0 <|> float1
-  exponentInt <- option 0 eNotation
-  return $ PyFloat (signFunc . read $ n ++ "e" ++ show exponentInt)
+float = (try exponentFloat <|> pointFloat) >>= return . PyFloat . pack
 
 pyNumber :: Parser PyNumber
-pyNumber = try float <|> integer
+pyNumber = lexeme $ try float <|> integer
 
