@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Compiler.Token.Util (Parser, symbol, lexeme) where
+module Compiler.Token.Util (Parser, symbol, lexeme, program) where
 
-import Text.Megaparsec (Parsec)
+import Text.Megaparsec (Parsec, eof, between, optional)
 import Text.Megaparsec.Char
 import Data.Void
 import Data.Text (Text)
@@ -19,3 +19,5 @@ lexeme = L.lexeme sc
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
+program :: Parser a -> Parser a
+program = between (optional space1) (optional $ space1 >> eof)

@@ -34,10 +34,11 @@ decInteger2 :: Parser PyNumber
 decInteger2 = do
   lead <- some (char '0')
   rest <- many $ pyDigit (char '0')
+  notFollowedBy digitChar
   return . PyInt . pack $ lead ++ mconcat rest
 
 decInteger :: Parser PyNumber
-decInteger = try decInteger1 <|> decInteger2
+decInteger = try decInteger2 <|> decInteger1
 
 modParser :: Parser Char -> Parser [Char]
 modParser modChar = do
