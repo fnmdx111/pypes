@@ -1,35 +1,59 @@
-module Compiler.Token.PyString () where
+{-# LANGUAGE OverloadedStrings #-}
 
--- import Data.List (intercalate)
--- import Text.Megaparsec
--- import Text.Megaparsec.Char
+module Compiler.Token.PyString (PyString(..), pyString) where
 
+import Compiler.Token.Util (Parser, lexeme)
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Data.Text (Text, pack)
+import Data.Char (toLower, toUpper)
+import Data.Maybe (fromMaybe)
 
--- data PyString =
---   PyStdString String
---   | PyRawString String
---   | PyFmtString String deriving (Show, Eq)
+data PyString = PyUnicodeString Text
 
+compositeStringPrefix :: Parser Text
+compositeStringPrefix = do
+  start <- oneOf ("fFrR" :: String)
+  end <- oneOf [x | x <- "fFrR", toLower x /= start, toUpper x /= start]
+  pure . pack $ start:[end]
 
--- -- stdString :: Parser PyString
--- -- stdString = do
--- --   return . PyStdString $ ""
+simpleStringPrefix :: Parser Text
+simpleStringPrefix = do
+  prefix <- oneOf ("furFUR" :: String)
+  pure . pack $ [prefix]
 
--- -- rawStringChar :: Parser String
--- -- rawStringChar = pure "1"
-  
+stringPrefix :: Parser Text
+stringPrefix = try compositeStringPrefix <|> simpleStringPrefix
 
--- -- rawString :: Parser PyString
--- -- rawString = do
--- --   _ <- char 'r'
--- --   let quoteParser = choice [string "'''", (string ['"', '"', '"']), string "'", string "\""]
--- --   quote <- (parserTraced "quote" quoteParser)
--- --   content <- fmap concat (parserTraced "content" $ many rawStringChar)
--- --   _ <- string quote
--- --   return . PyRawString $ "r" ++ quote ++ content ++ quote
+shortStringChar :: Char -> Parser Text
+shortStringChar quote = do
+  ch <- noneOf [ quote
+               , '\n'
+               , '\\'
+               ]
+  pure . pack $ [ch]
 
+shortStringItem :: Char -> Parser Text
+shortStringItem quote = try (shortStringChar quote) <|> stringEscapeSeq
 
--- pyString :: Parser PyString
--- -- pyString = try rawString <|> stdString
--- pyString = char 'a'
+stringEscapeSeq :: Parser Text
+stringEscapeSeq = do
+  esc <- char '\\'
+  ch <- printChar
+  pure . pack $ esc:[ch]
 
+shortString :: Parser Text
+shortString = do
+  quote <- oneOf ("'\""::[Char])
+  content <- many $ shortStringItem quote
+  endQuote <- char quote
+  pure $ (pack [quote]) <> (mconcat content) <> (pack [endQuote])
+
+stringLiteral :: Parser Text
+stringLiteral = do
+  maybePrefix <- optional stringPrefix
+  content <- shortString
+  pure $ (fromMaybe "" maybePrefix) <> content
+
+pyString :: Parser PyString
+pyString = fmap PyUnicodeString (lexeme stringLiteral)
