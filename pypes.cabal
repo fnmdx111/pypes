@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Compiler.Program.Literal
       Compiler.Token.Bool
       Compiler.Token.Common
       Compiler.Token.Identifier
@@ -66,6 +67,7 @@ test-suite pypes-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Compiler.Program.LiteralSpec
       Compiler.Program.TestSpec
       Compiler.Token.BoolSpec
       Compiler.Token.IdentifierSpec
