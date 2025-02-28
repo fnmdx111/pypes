@@ -5,9 +5,9 @@ module Compiler.Token.PyNumberSpec (spec) where
 import Compiler.Token.PyNumber
 import Compiler.Token.Util
 import Test.Hspec
-import Text.Megaparsec
 import Control.Monad (forM_)
-import Data.Text (Text, unpack)
+import Data.Text (Text)
+import Compiler.Token.TestUtil (assertTokenParserAccepts, assertTokenParserRejects)
 
 integerTestCases :: [Text]
 integerTestCases =
@@ -41,34 +41,12 @@ parseFailureCases =
   , "012345"
   ]
 
+testParser :: Parser PyNumber
 testParser = program pyNumber
-
-test :: (Text -> PyNumber) -> Text -> SpecWith ()
-test ctor testCase = do
-  (it . unpack) ("accepts " <> testCase) $ do
-    case parse testParser "" testCase of
-      Left e -> fail $ "Expected parse to have succeeded but got " <> show e
-      Right x -> x `shouldBe` (ctor testCase)
-  let wsTestCase = "  " <> testCase <> "  "
-  (it . unpack) ("accepts " <> wsTestCase) $ do
-    case parse testParser "" wsTestCase of
-      Left e -> fail $ "Expected parse to have succeeded but got " <> show e
-      Right x -> x `shouldBe` (ctor testCase)
-
 
 spec :: Spec
 spec = do
   describe "PyNumber" $ do
-    forM_ integerTestCases (test PyInt)
-    forM_ floatTestCases (test PyFloat)
-    forM_ parseFailureCases $ \testCase -> do
-      (it . unpack) ("rejects " <> testCase) $ do
-        case parse testParser "" testCase of
-          Left e -> (show e) `shouldSatisfy` (\x -> length x > 0)
-          Right x -> fail $ "Unexpected successful parse " <> show x
-      let wsTestCase = "  " <> testCase <> "  "
-      (it . unpack) ("rejects " <> wsTestCase) $ do
-        case parse testParser "" wsTestCase of
-          Left e -> (show e) `shouldSatisfy` (\x -> length x > 0)
-          Right x -> fail $ "Unexpected successful parse " <> show x
-
+    forM_ integerTestCases $ assertTokenParserAccepts testParser PyInt
+    forM_ floatTestCases $ assertTokenParserAccepts testParser PyFloat
+    forM_ parseFailureCases $ assertTokenParserRejects testParser

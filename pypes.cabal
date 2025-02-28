@@ -67,6 +67,7 @@ test-suite pypes-test
       Compiler.Token.IdentifierSpec
       Compiler.Token.PyNumberSpec
       Compiler.Token.PyStringSpec
+      Compiler.Token.TestUtil
       Paths_pypes
   autogen-modules:
       Paths_pypes

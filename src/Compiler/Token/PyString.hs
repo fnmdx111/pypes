@@ -10,6 +10,7 @@ import Data.Char (toLower, toUpper)
 import Data.Maybe (fromMaybe)
 
 data PyString = PyUnicodeString Text
+  deriving (Show, Eq)
 
 compositeStringPrefix :: Parser Text
 compositeStringPrefix = do

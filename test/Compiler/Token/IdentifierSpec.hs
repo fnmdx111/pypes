@@ -4,9 +4,10 @@ module Compiler.Token.IdentifierSpec (spec) where
 
 import Compiler.Token.Identifier
 import Test.Hspec
-import Text.Megaparsec
 import Control.Monad (forM_)
-import Data.Text (Text, unpack)
+import Data.Text (Text)
+import Compiler.Token.Util (Parser, program)
+import Compiler.Token.TestUtil (assertTokenParserAccepts, assertTokenParserRejects)
 
 acceptCases :: [Text]
 acceptCases =
@@ -28,14 +29,10 @@ rejectCases =
   , ""
   ]
 
+testParser :: Parser Identifier
+testParser = program identifier
+
 spec :: Spec
 spec = describe "Identifier" $ do
-  forM_ acceptCases $ \testCase -> (it . unpack) ("accepts " <> testCase <> " as identifier") $ do
-    case parse identifier "" testCase of
-      Left e -> fail $ "Expected parse to have succeeded but got " ++ show e
-      Right x -> x `shouldBe` (Identifier testCase)
-  forM_ rejectCases $ \testCase -> (it . unpack) ("rejects " <> testCase <> " as identifier") $ do
-    case parse identifier "" testCase of
-      Left e -> (show e) `shouldSatisfy` (\x -> length x > 0)
-      Right x -> fail $ "Unexpected successful parse " ++ show x
-
+  forM_ acceptCases $ assertTokenParserAccepts testParser Identifier
+  forM_ rejectCases $ assertTokenParserRejects testParser

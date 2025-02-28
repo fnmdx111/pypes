@@ -1,30 +1,29 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Compiler.Token.PyStringSpec (spec) where
 
 import Test.Hspec
+import Control.Monad (forM_)
+import Data.Text (Text)
+import Compiler.Token.PyString (pyString, PyString(..))
+import Compiler.Token.Util
+import Compiler.Token.TestUtil (assertTokenParserAccepts, assertTokenParserRejects)
 
+stringAcceptCases :: [Text]
+stringAcceptCases =
+  [ "r'abc\\n'"
+  , "'abc\\n'"
+  , "\"abc\\\"\"" ]
+
+stringRejectCases :: [Text]
+stringRejectCases =
+  [ "'abc\""
+  ]
+
+testParser :: Parser PyString
+testParser = program pyString
 
 spec :: Spec
 spec = describe "PyString" $ do
-  it "pass" $ do
-    1 == 1
-
--- import Compiler.Token.PyString
--- import Test.Hspec
--- import Text.Parsec
--- import Control.Monad (forM_)
-
--- rawStringAcceptCases =
---   [ "r'abc\\n'"
---   , "r'abc\\''"]
-
--- test :: (String -> PyString) -> String -> SpecWith ()
--- test ctor str = do
---   it ("accepts " ++ str) $ do
---     case parse pyString "" str of
---       Left e -> fail $ "Expected parse to have succeeded but got " ++ show e
---       Right x -> x `shouldBe` (ctor str)
-
--- spec :: Spec
--- spec = do
---   describe "PyString" $ do
---     forM_ rawStringAcceptCases (test PyRawString)
+  forM_ stringAcceptCases $ assertTokenParserAccepts testParser PyUnicodeString
+  forM_ stringRejectCases $ assertTokenParserRejects testParser
