@@ -25,8 +25,10 @@ source-repository head
 
 library
   exposed-modules:
+      Compiler.Token.Bool
       Compiler.Token.Common
       Compiler.Token.Identifier
+      Compiler.Token.None
       Compiler.Token.PyNumber
       Compiler.Token.PyString
       Compiler.Token.Util
@@ -65,7 +67,9 @@ test-suite pypes-test
   main-is: Spec.hs
   other-modules:
       Compiler.Program.TestSpec
+      Compiler.Token.BoolSpec
       Compiler.Token.IdentifierSpec
+      Compiler.Token.NoneSpec
       Compiler.Token.PyNumberSpec
       Compiler.Token.PyStringSpec
       Compiler.Token.TestUtil

@@ -9,7 +9,7 @@ newtype Identifier = Identifier Text deriving (Show, Eq)
 
 identifier :: Parser Identifier
 identifier = lexeme $ do
-  leading <- choice [letterChar, char '-', char '_']
+  leading <- choice [lowerChar, char '-', char '_']
   rest <- many $ choice [alphaNumChar, char '-', char '_']
   modifier <- optional (char '?') >>= \x -> case x of
     Just ch -> pure [ch]

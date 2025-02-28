@@ -27,6 +27,14 @@ rejectCases =
     "0a"
   , "1-a"
   , ""
+  , "Abc"
+  , "None"
+  , "Nil"
+  , "Null"
+  , "True"
+  , "T"
+  , "False"
+  , "F"
   ]
 
 testParser :: Parser Identifier
