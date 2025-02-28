@@ -64,6 +64,7 @@ test-suite pypes-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Compiler.Program.TestSpec
       Compiler.Token.IdentifierSpec
       Compiler.Token.PyNumberSpec
       Compiler.Token.PyStringSpec
