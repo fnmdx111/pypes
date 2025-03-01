@@ -8,8 +8,8 @@ import Text.Megaparsec (try)
 data PypesBool = PypesTrue | PypesFalse deriving (Show, Eq)
 
 boolT :: Parser PypesBool
-boolT = asum [ try $ chunkT "T" >> pure PypesTrue
-             , try $ chunkT "True" >> pure PypesTrue
-             , try $ chunkT "F" >> pure PypesFalse
+boolT = asum [ try $ chunkT "True" >> pure PypesTrue
              , try $ chunkT "False" >> pure PypesFalse
+             , try $ chunkT "T" >> pure PypesTrue
+             , chunkT "F" >> pure PypesFalse
              ]

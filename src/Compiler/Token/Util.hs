@@ -26,4 +26,4 @@ symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
 program :: Parser a -> Parser a
-program = between (optional space1) (optional $ space1 >> eof)
+program = between (optional space1) (optional space1 >> eof)

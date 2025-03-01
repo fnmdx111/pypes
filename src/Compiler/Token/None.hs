@@ -10,5 +10,5 @@ data PypesNone = PypesNone deriving (Show, Eq)
 noneT :: Parser PypesNone
 noneT = asum [ try $ chunkT "None" >> pure PypesNone
              , try (chunkT "Nil") >> pure PypesNone
-             , try (chunkT "Null") >> pure PypesNone
+             , (chunkT "Null") >> pure PypesNone
              ]
