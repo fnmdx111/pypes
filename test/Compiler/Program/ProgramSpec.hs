@@ -22,12 +22,21 @@ acceptCases :: [(Text, PypesProgram)]
 acceptCases =
   [ ( "x |> y |> z"
     , Expr (PipeExpr
-             (LitExpr (LitId (Identifier "x")))
+            (PipeExpr
+              (LitExpr (LitId (Identifier "x")))
+              Nothing
+              (LitExpr (LitId (Identifier "y"))))
              Nothing
+             (LitExpr (LitId (Identifier "z"))))
+    )
+  , ( "x |p@{}> y |z> w"
+    , Expr (PipeExpr
              (PipeExpr
-               (LitExpr (LitId (Identifier "y")))
-               Nothing
-               (LitExpr (LitId (Identifier "z"))))))
+               (LitExpr (LitId (Identifier "x")))
+               (Just (NamedVpm (Identifier "p") (VpmLiteral (LitDict []))))
+               (LitExpr (LitId (Identifier "y"))))
+             (Just (UnnamedVpm (VpmLiteral (LitId (Identifier "z")))))
+             (LitExpr (LitId (Identifier "w")))))
   ]
 
 rejectCases :: [Text]
