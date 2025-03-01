@@ -20,6 +20,11 @@ data BinOp =
   | TrueDivide
   | Power
   | NoneDefault  -- y ?? z -> z if y == None else y
+  | GreaterThan
+  | GreaterThanOrEqualTo
+  | LessThan
+  | LessThanOrEqualTo
+  | NotEqualTo
   deriving (Show, Eq)
 
 data PypesExpr =
@@ -35,14 +40,21 @@ data PypesProgram = Expr PypesExpr
 
 binOpP :: Parser BinOp
 binOpP = lexeme . asum $
-  [ try (charT '+') >> pure Add
-  , try (charT '-') >> pure Minus
-  , try (charT '*') >> pure Multiply
-  , try (chunkT "//") >> pure Divide
-  , try (charT '/') >> pure TrueDivide
-  , try (chunkT "**") >> pure Power
-  , try (chunkT "??") >> pure NoneDefault
-  ]
+    [ Add <$ op '+'
+    , Minus <$ op '-'
+    , Multiply <$ op '*'
+    , Divide <$ op' "//"
+    , TrueDivide <$ op '/'
+    , Power <$ op' "**"
+    , NoneDefault <$ op' "??"
+    , LessThan <$ op '<'
+    , LessThanOrEqualTo <$ op' "<="
+    , GreaterThan <$ op '>'
+    , GreaterThanOrEqualTo <$ op' ">="
+    , NotEqualTo <$ op' "!="
+    ]
+  where op = try . charT
+        op' = try . chunkT
 
 lPartialBinaryFunExprP :: Parser PypesExpr
 lPartialBinaryFunExprP = paren $ LeftPartialBinaryOpFunExpr <$> exprP <*> binOpP
