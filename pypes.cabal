@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Compiler.Program.Literal
+      Compiler.Program.VariablePatternMatch
       Compiler.Token.Bool
       Compiler.Token.Common
       Compiler.Token.Identifier
@@ -69,6 +70,7 @@ test-suite pypes-test
   other-modules:
       Compiler.Program.LiteralSpec
       Compiler.Program.TestSpec
+      Compiler.Program.VariablePatternMatchSpec
       Compiler.Token.BoolSpec
       Compiler.Token.IdentifierSpec
       Compiler.Token.NoneSpec

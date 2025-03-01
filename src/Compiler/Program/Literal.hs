@@ -1,7 +1,7 @@
 module Compiler.Program.Literal
   (Literal(..), literalP) where
 
-import Compiler.Token.Util (charT, Parser)
+import Compiler.Token.Util (charT, Parser, lexeme)
 import Compiler.Token.PyString (PyString(..), pyString)
 import Compiler.Token.PyNumber (PyNumber(..), pyNumber)
 import Compiler.Token.Identifier (Identifier(..), identifier)
@@ -41,11 +41,11 @@ litDictP = do
   pure $ LitDict xs
 
 literalP :: Parser Literal
-literalP = asum [ fmap LitString $ try pyString
-                , fmap LitNumber $ try pyNumber
-                , fmap LitId $ try identifier
-                , try litListP
-                , try litDictP
-                , fmap LitBool $ try boolT
-                , fmap LitNone $ try noneT
-                ]
+literalP = lexeme $ asum [ fmap LitString $ try pyString
+                         , fmap LitNumber $ try pyNumber
+                         , fmap LitId $ try identifier
+                         , try litListP
+                         , try litDictP
+                         , fmap LitBool $ try boolT
+                         , fmap LitNone $ try noneT
+                         ]
