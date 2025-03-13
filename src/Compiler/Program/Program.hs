@@ -27,10 +27,23 @@ data BinOp =
   | NotEqualTo
   deriving (Show, Eq)
 
+data LambdaDefExpr = LambdaDefExpr VariablePatternMatch PypesExpr deriving (Show, Eq)
+data FunInvocationExpr = FunInvocationExpr PypesExpr [PypesExpr] deriving (Show, Eq)
+data PipeRhsExpr =
+  Lambda [LambdaDefExpr]
+  | Fun FunInvocationExpr
+  deriving (Show, Eq)
+
+data PipeExpr = PipeExpr PipeLhsExpr PipeRhsExpr deriving (Show, Eq)
+data PipeLhsExpr =
+  Lit PypesExpr
+  | Parenthesized PypesExpr
+  deriving (Show, Eq)
+
 data PypesExpr =
-  PipeExpr PypesExpr (Maybe VariablePatternMatch) PypesExpr
+  PypesPipeExpr PipeExpr
   | LitExpr Literal
-  | FunExpr PypesExpr [PypesExpr]
+  | FunExpr FunInvocationExpr
   | LeftPartialBinaryOpFunExpr PypesExpr BinOp
   | RightPartialBinaryOpFunExpr BinOp PypesExpr
   deriving (Show, Eq)
@@ -56,6 +69,23 @@ binOpP = lexeme . asum $
   where op = try . charT
         op' = try . chunkT
 
+
+lambdaDefExprP :: Parser LambdaDefExpr
+lambdaDefExprP = LambdaDefExpr <$> vpmP <* charT 'a' <*> exprP
+
+funInvocationExprP :: Parser FunInvocationExpr
+funInvocationExprP = FunInvocationExpr <$> functorP <*> many exprP
+
+pipeRhsExprP :: Parser PipeRhsExpr
+pipeRhsExprP = try (Lambda <$> (lambdaDefExprP `sepBy1` charT ';'))
+  <|> (Fun <$> funInvocationExprP)
+
+pipeLhsExprP :: Parser PipeLhsExpr
+pipeLhsExprP = try (Lit . LitExpr <$> literalP) <|> (Parenthesized <$> paren exprP)
+
+pipeP :: Parser PipeExpr
+pipeP = PipeExpr <$> pipeLhsExprP <* pipeOperatorP <*> pipeRhsExprP
+
 lPartialBinaryFunExprP :: Parser PypesExpr
 lPartialBinaryFunExprP = paren $ LeftPartialBinaryOpFunExpr <$> exprP <*> binOpP
 
@@ -66,16 +96,16 @@ functorP :: Parser PypesExpr
 functorP = try (identifier >>= pure . LitExpr . LitId) <|> paren exprP
 
 funExprP_noParen :: Parser PypesExpr
-funExprP_noParen = FunExpr <$> functorP <*> many exprP <* (charT '$')
+funExprP_noParen = FunExpr <$> funInvocationExprP
 
 funExprP_paren :: Parser PypesExpr
-funExprP_paren = paren $ FunExpr <$> functorP <*> many exprP <* (optional $ charT '$')
+funExprP_paren = paren $ funExprP_noParen
 
 funExprP :: Parser PypesExpr
 funExprP = try funExprP_paren <|> funExprP_noParen
 
-pipeOperatorP :: Parser (Maybe VariablePatternMatch)
-pipeOperatorP = (charT '|' <?> "start of pipe") *> optional vpmP <* (charT '>' <?> "end of pipe")
+pipeOperatorP :: Parser ()
+pipeOperatorP = chunkT "|>" >> pure ()
 
 chainl1 :: (MonadParsec e s m) => m a -> m (a -> a -> a) -> m a
 chainl1 pa op = do
@@ -90,13 +120,6 @@ chainl1 pa op = do
 
 lassocBinP :: Parser (PypesExpr -> PypesExpr -> PypesExpr) -> Parser PypesExpr -> Parser PypesExpr
 lassocBinP opP termP = (try (paren termP) <|> termP) `chainl1` opP
-
-pipeP :: Parser PypesExpr
-pipeP = lassocBinP opP termP
-  where opP = do
-          vpm <- pipeOperatorP
-          pure $ \lhs rhs -> PipeExpr lhs vpm rhs
-        termP = try (fmap LitExpr literalP) <|> funExprP
 
 paren :: Parser a -> Parser a
 paren = between (charT '(') (charT ')')
